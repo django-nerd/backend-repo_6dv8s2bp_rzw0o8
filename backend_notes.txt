@@ -1,0 +1,1 @@
+Implementing NeuroLink Health MVP within FastAPI + MongoDB stack (available in this sandbox). Provides JWT auth, users, vitals, alerts, and WebSocket chat. Frontend is Vite + React. This differs from the requested NestJS/Postgres but matches the environment capabilities.

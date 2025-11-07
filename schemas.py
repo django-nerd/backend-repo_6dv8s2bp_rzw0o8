@@ -1,48 +1,78 @@
-"""
-Database Schemas
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Literal, List
+from datetime import datetime
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
-"""
-
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
+Role = Literal['doctor', 'patient']
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str
+    email: EmailStr
+    password_hash: str
+    role: Role
+    doctor_id: Optional[str] = Field(default=None, description="Assigned doctor's user id for patients")
+    doctor_code: Optional[str] = Field(default=None, description="Invite/connection code for doctors")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: Role
+    doctor_code: Optional[str] = None
+    doctor_email: Optional[EmailStr] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+class UserPublic(BaseModel):
+    id: str
+    name: str
+    email: EmailStr
+    role: Role
+    doctor_id: Optional[str] = None
+    doctor_code: Optional[str] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = 'bearer'
+    user: UserPublic
+
+class VitalRecord(BaseModel):
+    user_id: str
+    heartRate: int
+    spo2: int
+    temperature: float
+    bpSystolic: int
+    bpDiastolic: int
+    respirationRate: int
+    timestamp: datetime
+
+class VitalCreate(BaseModel):
+    heartRate: int
+    spo2: int
+    temperature: float
+    bpSystolic: int
+    bpDiastolic: int
+    respirationRate: int
+    timestamp: Optional[datetime] = None
+
+class Alert(BaseModel):
+    user_id: str
+    doctor_id: str
+    type: Literal['heartRate_low','heartRate_high','spo2_low','temperature_high','bp_high','respiration_abnormal']
+    message: str
+    created_at: Optional[datetime] = None
+
+class Message(BaseModel):
+    sender_id: str
+    recipient_id: str
+    content: str
+    timestamp: datetime
+
+class PatientSummary(BaseModel):
+    id: str
+    name: str
+    email: EmailStr
+    latest_vitals: Optional[VitalRecord] = None
+    alert_count: int = 0
+
+class DoctorDashboardSummary(BaseModel):
+    total_patients: int
+    active_alerts: int
+    new_messages: int
